@@ -77,8 +77,21 @@ bn_gold_lists = (
        .reset_index(name="bn_gold_list")
 )
 
+lemma_gold_lists = (
+    df_src.groupby("sentence_id")["lemma"]
+       .apply(lambda x: [v for v in x])  # drop NaN
+       .reset_index(name="lemma")
+)
+
 # merge back into df2
-df_sent = df_sent.merge(bn_gold_lists, on="sentence_id", how="left")
+
+
+bn_gold_lists = bn_gold_lists.rename(columns={"bn_gold_list": "bn_gold_list"})
+lemma_gold_lists = lemma_gold_lists.rename(columns={"lemma": "lemma_gold"})
+
+df_sent = (
+    df_sent.merge(bn_gold_lists, on="sentence_id", how="left").merge(lemma_gold_lists, on="sentence_id", how="left")
+)
 
 #print()
 #print(df_sent.iloc[0], '\n')
@@ -93,7 +106,8 @@ senses = set()
 import ast
 for _, row in df_sent.iterrows():
   sid = row['sentence_id']
-  src = row['lemma'].split(' ')
+  print(row)
+  src = row['lemma_gold']
   tgt = row['translation_lemma'].split(' ')
   ali = ast.literal_eval(row['alignment'])
   bns = row['bn_gold_list']

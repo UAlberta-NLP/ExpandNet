@@ -14,7 +14,7 @@ Takes four arguments:
 
 Altogether, it can be run as such:
 
-python3 expandnet_step1_translate.py --src_data xlwsd_se13.xml --lang_src en --lang_tgt es --output_file expandnet_step1_translate.out.tsv
+``` python3 expandnet_step1_translate.py --src_data xlwsd_se13.xml --lang_src en --lang_tgt es --output_file expandnet_step1_translate.out.tsv
 
 ## Translation Output
 
@@ -39,8 +39,21 @@ Takes six arguments:
 
 Altogether, it can be run as such:
 
-python3 expandnet_step2_align.py --translation_df_file expandnet_step1_translate.out.tsv --lang_src en --lang_tgt es --aligner dbalign --dict wikpan-en-es.tsv --output_file expandnet_step2_align.out.tsv
+``` python3 expandnet_step2_align.py --translation_df_file expandnet_step1_translate.out.tsv --lang_src en --lang_tgt es --aligner dbalign --dict wikpan-en-es.tsv --output_file expandnet_step2_align.out.tsv
 
+## Step 3 Project
+
+The projection step takes the output of Step 2 (alignment) and uses it to transfer sense annotations or lexical information from the source language to the target language.
+
+Takes six arguments:
+1. src_data: The original XML file containing the source-language sentences (same as used in Step 1).
+2. src_gold: The gold key file containing the source-language sense annotations.
+3. dictionary: The bilingual dictionary used for lexical projection (likely the same .tsv dictionary used in Step 2).
+4. alignment_file: The alignment output file produced by Step 2.
+5. output_file: The address of the file where the projected annotations will be saved.
+6. join_char: A character used to join multi-word lexical items during projection (default '_').
+
+``` python3 expandnet_step3_project.py --src_data xlwsd_se13.xml --src_gold xlwsd_se13.key.txt --dictionary wikpan-en-es.tsv --alignment_file expandnet_step2_align.out.tsv --output_file expandnet_step3_project.out.tsv --join_char _
 
 ## eval_release.py
 
