@@ -23,6 +23,7 @@ LEMMATIZERS = {'es': spacy.load("es_core_news_lg"),
                'fr': spacy.load("fr_core_news_lg"), 
                'en': spacy.load("en_core_web_lg"), 
                # 'ro': spacy.load("ro_core_news_lg")
+               'xx': spacy.load('xx_ent_wiki_sm')
                 }
 
 TAGDICT = {'NP': 'n', 'VBD': 'v', 'SPACE': 'x', 'DET': 'x', 'JJ': 'a', 'NN': 'n', 'NNS': 'n', 'ADV': 'r', 'ADJ': 'a', 'PRON': 'n', 'AUX': 'v', 'CCONJ': 'x', 'SCONJ': 'x', 'X': 'x',
@@ -307,7 +308,10 @@ def get_lemma(word, lang):
         return word
     if lang == 'zh':
         return word
-    proper_nlp = LEMMATIZERS[lang]
+    if lang in LEMMATIZERS:
+        proper_nlp = LEMMATIZERS[lang]
+    else:
+        proper_nlp = LEMMATIZERS['xx']
     cachekey = word + '<>' + lang
     if cachekey in STEM_CACHE:
         return STEM_CACHE[cachekey]
@@ -515,8 +519,10 @@ def token_pos_and_morph_tag(sentence, language):
     key = language + '<>' + sentence + '<>' + 'WITHMORPH'
     if key in POS_CACHE:
         return POS_CACHE[key]
-  
-    doc = LEMMATIZERS[language](sentence)
+    if language in LEMMATIZERS:
+        doc = LEMMATIZERS[language](sentence)
+    else:
+        doc = LEMMATIZERS['xx'](sentence)
    
     for token in doc:
         tokens.append(token.text)
