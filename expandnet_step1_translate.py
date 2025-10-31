@@ -84,9 +84,9 @@ df_sent['translation'] = df_sent['text'].apply(
     lambda s: translate(s)
 )
 
-df_sent['lemma'] = df_sent['text'].apply(
-    lambda s: tokenize_sentence(s, lang_src, True)
-)
+#df_sent['lemma'] = df_sent['text'].apply(
+#    lambda s: tokenize_sentence(s, lang_src, True)
+#)
 
 df_sent['translation_token'] = df_sent['translation'].apply(
     lambda s: tokenize_sentence(s, lang_tgt)
