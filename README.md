@@ -67,3 +67,12 @@ Takes two arguments:
 2. An output file, listing exactly one sense per line. Format: [synset ID] [TAB] [lemma]
 
 Output is an evaluation for each sense, and overall statistics.
+
+Such a gold-standard file can be generated using expand_synsets_release.py, if one has access to BabelNet It takes three arguments:
+1. The target language code
+2. A file consisting of only BabelNet synset IDs organized into rows
+3. The desired location to save this file to
+
+```bash 
+python3 expand_synsets_release.py fr se13.gold.senses.txt gold_output.tsv
+```
