@@ -1,5 +1,4 @@
-# ExpandNet
-Official codebase for the project *Generating Concept Lexicalizations via Dictionary-Based Cross-Lingual Sense Projection*.
+# A3: Concepts
 
 The pipeline consists of three steps: translation, alignment, and projection. 
 The built-in translation module only support a limited number of language pairs, so if you are working with an unsupported pair, you may directly supply translations to the second step of the pipeline in the format it expects.

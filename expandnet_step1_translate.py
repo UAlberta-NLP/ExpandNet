@@ -53,6 +53,9 @@ model_map = {
       'es': 'es_core_news_lg'
     }
 
+# Chinese doesn't use lemmatization
+lemmatize = False if lang_tgt in ['zh'] else True
+
 # Keep hold of lemmatization and tokenization pipelines
 pipelines = {}
 
@@ -93,7 +96,7 @@ df_sent['translation_token'] = df_sent['translation'].apply(
 )
 
 df_sent['translation_lemma'] = df_sent['translation'].apply(
-    lambda s: tokenize_sentence(s, lang_tgt, True)
+    lambda s: tokenize_sentence(s, lang_tgt, lemmatize)
 )
 
 print(df_sent.head(5), '\n')

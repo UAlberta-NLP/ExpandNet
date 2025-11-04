@@ -16,7 +16,7 @@ def parse_args():
   parser.add_argument("--alignment_file", type=str, default="expandnet_step2_align.out.tsv",
                       help="File containing the output of step 2 (alignment).")
   parser.add_argument("--output_file", type=str, default="expandnet_step3_project.out.tsv")
-  parser.add_argument("--join_char", type=str, default='_')
+  parser.add_argument("--join_char", type=str, default='')
   return parser.parse_args()
 
 args = parse_args()
@@ -29,14 +29,17 @@ join_char = args.join_char
 
 # Load the dataset and alignment data.
 df_src = xml_utils.process_dataset(src_data, src_gold)
-#print('Dataset loaded')
-#print(df_src.iloc[1], '\n')
+print('Dataset loaded')
+# print(df_src.iloc[1], '\n')
+
 df_sent = pd.read_csv(alignment_file, sep='\t')
-#print('Alignment loaded')
-#print(df_sent.iloc[0], '\n')
+print('Alignment loaded')
+# print(df_sent.iloc[0], '\n')
 
 
 import csv
+csv.field_size_limit(sys.maxsize)
+
 def load_dict(filepaths):
     """Load multiple TSV files into a dict: {english_word: set(french_words)}.
     All spaces are normalized to underscores.
@@ -74,8 +77,9 @@ dict_wik = load_dict([dict_file])
 bn_gold_lists = (
     df_src.groupby("sentence_id")["bn_gold"]
        .apply(lambda x: [v for v in x])  # drop NaN
-       .reset_index(name="bn_gold_list")
+       .reset_index(name="bn_gold")
 )
+
 
 lemma_gold_lists = (
     df_src.groupby("sentence_id")["lemma"]
@@ -86,15 +90,15 @@ lemma_gold_lists = (
 # merge back into df2
 
 
-bn_gold_lists = bn_gold_lists.rename(columns={"bn_gold_list": "bn_gold_list"})
+bn_gold_lists = bn_gold_lists.rename(columns={"bn_gold": "bn_gold"})
 lemma_gold_lists = lemma_gold_lists.rename(columns={"lemma": "lemma_gold"})
 
 df_sent = (
     df_sent.merge(bn_gold_lists, on="sentence_id", how="left").merge(lemma_gold_lists, on="sentence_id", how="left")
 )
 
-#print()
-#print(df_sent.iloc[0], '\n')
+# print()
+# print(df_sent.iloc[0], '\n')
 
 
 def get_alignments(alignments, i):
@@ -106,21 +110,21 @@ senses = set()
 import ast
 for _, row in df_sent.iterrows():
   sid = row['sentence_id']
-  print(row)
+  # print(row)
   src = row['lemma_gold']
   tgt = row['translation_lemma'].split(' ')
   ali = ast.literal_eval(row['alignment'])
-  bns = row['bn_gold_list']
+  bns = row['bn_gold']
 
-  print('SID', sid)
-  print('TXT', row['text'])
-  print('SRC', src)
-  print('TGT', tgt)
-  print('ALI', ali)
-  print('BNs', bns)
-  if not (len(src) == len(bns)):
-    print('SRC / BNs length mismatch.')
-    continue
+  # print('SID', sid)
+  # print('TXT', row['text'])
+  # print('SRC', src)
+  # print('TGT', tgt)
+  # print('ALI', ali)
+  # print('BNs', bns)
+  # if not (len(src) == len(bns)):
+    # print('SRC / BNs length mismatch.')
+    # continue
 
   for i, bn in enumerate(bns):
     if not str(bn)[:3] == 'bn:':
@@ -138,15 +142,17 @@ for _, row in df_sent.iterrows():
         source = src[i]
         filter_pass = is_valid_translation(source, candidate, dict_wik)
 
-        print('', i, bn, src[i], alignment_indices, candidate, filter_pass, sep='\t')
+        # print('', i, bn, src[i], alignment_indices, candidate, filter_pass, sep='\t')
         if bool(filter_pass):
-          print('SENSE', bn, candidate, sep='\t')
+          # print('SENSE', bn, candidate, sep='\t')
           senses.add((bn, candidate))
-    else:
-      print('', i, bn, src[i], alignment_indices, 'NO_CANDIDATES', False, sep='\t')
+    # else:
+      # print('', i, bn, src[i], alignment_indices, 'NO_CANDIDATES', False, sep='\t')
 
   
-  print()
+  # print()
+
+# print(senses)
 
 with open(output_file, 'w') as f:
   for (bn, lemma) in sorted(senses):
