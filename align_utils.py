@@ -20,7 +20,6 @@ LEMMATIZERS = {'es': spacy.load("es_core_news_lg"),
                'en': spacy.load("en_core_web_lg"), 
                # 'ro': spacy.load("ro_core_news_lg"), 
                'zh': spacy.load("zh_core_web_lg"),
-               'xx': spacy.load('xx_ent_wiki_sm')
                 }
 
 TAGDICT = {'NP': 'n', 'VBD': 'v', 'SPACE': 'x', 'DET': 'x', 'JJ': 'a', 'NN': 'n', 'NNS': 'n', 'ADV': 'r', 'ADJ': 'a', 'PRON': 'n', 'AUX': 'v', 'CCONJ': 'x', 'SCONJ': 'x', 'X': 'x',

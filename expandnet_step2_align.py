@@ -1,6 +1,5 @@
 import argparse
 import pandas as pd
-import sys
 
 def parse_args():
   parser = argparse.ArgumentParser(description="Run ExpandNet on XLWSD dev set (R17).")
@@ -21,29 +20,26 @@ def parse_args():
 
 args = parse_args()
 
+print(f"Languages:   {args.lang_src} -> {args.lang_tgt}")
+print(f"Aligner:     {args.aligner}")
+print(f"Input file:  {args.translation_df_file}")
+print(f"Output file: {args.output_file}")
 
-lang_src = args.lang_src
-lang_tgt = args.lang_tgt
-usedict  = args.dict
-translation_df_file = args.translation_df_file
-aligner = args.aligner
-output_file = args.output_file
-
-if aligner == 'simalign':
+if args.aligner == 'simalign':
   from simalign import SentenceAligner
   ali = SentenceAligner(model="xlmr", layer=8, token_type="bpe", matching_methods="i")
   def align(lang_src, lang_tgt, tokens_src, tokens_tgt):
     alignment_links = ali.get_word_aligns(tokens_src, tokens_tgt)['itermax']
     return(alignment_links)
 
-elif aligner == 'dbalign':
+elif args.aligner == 'dbalign':
   from align_utils import DBAligner
-  if usedict == 'bn':
+  if args.dict == 'bn':
     print("Initializing DBAlign with BabelNet.")
-    ali = DBAligner(lang_src, lang_tgt)
+    ali = DBAligner(args.lang_src, args.lang_tgt)
   else:
     print("Initializing DBAlign with Provided Dictionary.")
-    ali = DBAligner(lang_src, lang_tgt, 'custom', usedict)
+    ali = DBAligner(args.lang_src, args.lang_tgt, 'custom', args.dict)
 
   def spans_to_links(span_string):
     span_string = span_string.strip()
@@ -64,31 +60,22 @@ elif aligner == 'dbalign':
     return(spans_to_links(alignment_spans))
 
 from pandarallel import pandarallel
-#pandarallel.initialize(progress_bar=False, nb_workers=16)
-pandarallel.initialize(progress_bar=False, nb_workers=5)
-from tqdm import tqdm
 
-# Create your own progress bar that writes to stderr
-def apply_with_progress(df, func, axis=1):
-    results = []
-    with tqdm(total=len(df), file=sys.stderr, desc="Processing") as pbar:
-        def wrapped_func(*args, **kwargs):
-            result = func(*args, **kwargs)
-            pbar.update(1)
-            return result
-        
-        # Apply with your wrapped function
-        results = df.apply(wrapped_func, axis=axis)
-    return results
-df_sent = pd.read_csv(translation_df_file, sep='\t')
+pandarallel.initialize(progress_bar=True, nb_workers=5)
 
-df_sent['alignment'] = apply_with_progress(
-    df_sent,
-    lambda row: align(lang_src, 
-                      lang_tgt,
+print(f"Loading data from {args.translation_df_file}...")
+df_sent = pd.read_csv(args.translation_df_file, sep='\t')
+print(f"Loaded {len(df_sent)} sentences\n")
+
+print("Aligning sentences...")
+df_sent['alignment'] = df_sent.parallel_apply(
+    lambda row: align(args.lang_src,
+                      args.lang_tgt,
                       row['lemma'].split(' '),
-                      row['translation_lemma']),
+                      row['translation_lemma'].split(' ')),
     axis=1
 )
 
-df_sent.to_csv(output_file, sep='\t', index=False)
+print(f"\nSaving results to {args.output_file}...")
+df_sent.to_csv(args.output_file, sep='\t', index=False)
+print("Complete!")
