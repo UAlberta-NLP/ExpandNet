@@ -1,8 +1,7 @@
-import sys
-import os
 import argparse
 import pandas as pd
 import spacy
+from transformers import pipeline
 import xml_utils
 
 def parse_args():
@@ -19,90 +18,71 @@ def parse_args():
 
 # Parse the arguments.
 args = parse_args()
-src_data = args.src_data
-lang_src = args.lang_src
-lang_tgt = args.lang_tgt
-output_file = args.output_file
 
 # Print argument details.
-print(f"Languages:   {lang_src} -> {lang_tgt}")
-print(f"Corpus:      {src_data}")
-print(f"Output file: {output_file}")
+print(f"Languages:   {args.lang_src} -> {args.lang_tgt}")
+print(f"Corpus:      {args.src_data}")
+print(f"Output file: {args.output_file}")
 
 # Load the data.
-df_src = xml_utils.process_xml(src_data)
-print('Data loaded:')
-print(df_src.head(10), '\n')
+df_src = xml_utils.process_xml(args.src_data)
+print(f'Data loaded: {len(df_src)} rows')
+
 df_sent = xml_utils.extract_sentences(df_src)
-print('Sentences assembled:')
-print(df_sent.head(3), '\n')
+print(f'Sentences assembled: {len(df_sent)} rows')
 
 # Translate.
-tr_model = f"Helsinki-NLP/opus-mt-{lang_src}-{lang_tgt}"
-from transformers import pipeline
+tr_model = f"Helsinki-NLP/opus-mt-{args.lang_src}-{args.lang_tgt}"
 try:
   pipe = pipeline("translation", model=tr_model, device=0)
 except OSError:
-  raise RuntimeError("unsupported sentence pair:" + str(lang_src) + ' ' + str(lang_tgt))
-
+  raise RuntimeError(f"Unsupported language pair: {args.lang_src} -> {args.lang_tgt}")
 
 model_map = {
-      'en': 'en_core_web_lg',
-      'zh': 'zh_core_web_lg',
-      'fr': 'fr_core_news_lg',
-      'es': 'es_core_news_lg'
-    }
+  'en': 'en_core_web_lg',
+  'zh': 'zh_core_web_lg',
+  'fr': 'fr_core_news_lg',
+  'es': 'es_core_news_lg'
+}
 
 # Chinese doesn't use lemmatization
-lemmatize = False if lang_tgt in ['zh'] else True
+lemmatize = False if args.lang_tgt in ['zh'] else True
 
-# Keep hold of lemmatization and tokenization pipelines
+# Load spacy pipelines
 pipelines = {}
 
 try:
-  pipelines[lang_src] = spacy.load(model_map.get(lang_src, f"{lang_src}_core_news_lg"))
-except KeyError:
-  print("No spacy pipeline found for source language", lang_src, "no lemmatization will be done on source language")
-  
+  pipelines[args.lang_src] = spacy.load(model_map.get(args.lang_src, f"{args.lang_src}_core_news_lg"))
+except OSError:
+  print(f"No spacy pipeline found for source language {args.lang_src}")
+
 try:
-  pipelines[lang_tgt] = spacy.load(model_map.get(lang_tgt, f"{lang_tgt}_core_news_lg"))
-except KeyError:
-  print("No spacy pipeline found for target language", lang_tgt, "no lemmatization will be done on target language")
+  pipelines[args.lang_tgt] = spacy.load(model_map.get(args.lang_tgt, f"{args.lang_tgt}_core_news_lg"))
+except OSError:
+  print(f"No spacy pipeline found for target language {args.lang_tgt}")
 
 
 def tokenize_sentence(sentence: str, lang: str, lemmatize: bool = False):
-  # Check if pipeline is already loaded
-  # Use cached pipeline
   doc = pipelines[lang](sentence)
   if lemmatize:
-    return ' '.join([a.replace(' ', '_') for a in [token.lemma_ for token in doc]])
+    return ' '.join(token.lemma_.replace(' ', '_') for token in doc)
   else:
-    return ' '.join([a.replace(' ', '_') for a in [token.text   for token in doc]])
-  
-def translate(sentence):
-    output = pipe(sentence)[0]['translation_text']
-    return(output)
+    return ' '.join(token.text.replace(' ', '_') for token in doc)
 
-df_sent['translation'] = df_sent['text'].apply(
-    lambda s: translate(s)
-)
-
-#df_sent['lemma'] = df_sent['text'].apply(
-#    lambda s: tokenize_sentence(s, lang_src, True)
-#)
+translations = pipe(df_sent['text'].tolist(), batch_size=16)
+df_sent['translation'] = [t['translation_text'] for t in translations]
 
 df_sent['translation_token'] = df_sent['translation'].apply(
-    lambda s: tokenize_sentence(s, lang_tgt)
+    lambda s: tokenize_sentence(s, args.lang_tgt, False)
 )
 
 df_sent['translation_lemma'] = df_sent['translation'].apply(
-    lambda s: tokenize_sentence(s, lang_tgt, lemmatize)
+    lambda s: tokenize_sentence(s, args.lang_tgt, lemmatize)
 )
 
-print(df_sent.head(5), '\n')
+print(f'Translation complete: {len(df_sent)} sentences processed\n')
 
-print(f'Creation complete. Saving to "{output_file}"...')
+print(f'Saving to "{args.output_file}"...')
 cols = ['sentence_id', 'text', 'translation', 'lemma', 'translation_token', 'translation_lemma']
-df_sent[cols].to_csv(output_file, sep='\t', index=False)
-print(f'Saving complete.')
-
+df_sent[cols].to_csv(args.output_file, sep='\t', index=False)
+print('Complete!')
