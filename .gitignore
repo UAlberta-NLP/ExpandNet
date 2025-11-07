@@ -1,6 +1,6 @@
 # Ning
 .DS_Store
-res/
+res/trans/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

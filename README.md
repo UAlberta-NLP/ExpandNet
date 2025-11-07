@@ -15,7 +15,7 @@ Altogether, it can be run as such:
 
 ```bash 
 python3 expandnet_step1_translate.py \
---src_data xlwsd_se13.xml \
+--src_data res/data/xlwsd_se13.xml \
 --lang_src en \
 --lang_tgt es \
 --output_file expandnet_step1_translate.out.tsv 
@@ -59,7 +59,7 @@ python3 expandnet_step2_align.py \
 --lang_src en \
 --lang_tgt es \
 --aligner dbalign \
---dict wikpan-en-es.tsv \
+--dict res/dicts/wikpan-en-es.tsv \
 --output_file expandnet_step2_align.out.tsv 
 ```
 
@@ -77,9 +77,9 @@ Takes six arguments:
 
 ```bash 
 python3 expandnet_step3_project.py \
---src_data xlwsd_se13.xml \
---src_gold xlwsd_se13.key.txt \
---dictionary wikpan-en-es.tsv \
+--src_data res/data/xlwsd_se13.xml \
+--src_gold res/data/se13.key.txt \
+--dictionary res/dicts/wikpan-en-es.tsv \
 --alignment_file expandnet_step2_align.out.tsv \
 --output_file expandnet_step3_project.out.tsv \
 --join_char _ 
