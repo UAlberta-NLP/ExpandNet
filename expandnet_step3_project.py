@@ -16,7 +16,7 @@ def parse_args():
   parser.add_argument("--alignment_file", type=str, default="expandnet_step2_align.out.tsv",
                       help="File containing the output of step 2 (alignment).")
   parser.add_argument("--output_file", type=str, default="expandnet_step3_project.out.tsv")
-  parser.add_argument("--join_char", type=str, default='')
+  parser.add_argument("--join_char", type=str, default='_')
   return parser.parse_args()
 
 args = parse_args()
