@@ -120,6 +120,7 @@ for _, row in df_sent.iterrows():
     if candidates:
       for candidate in candidates:
         source = src[i]
+        print('', i, bn, src[i], alignment_indices, candidate, is_valid_translation(source, candidate, dict_wik), sep='\t')
         if is_valid_translation(source, candidate, dict_wik):
           senses.add((bn, candidate))
 

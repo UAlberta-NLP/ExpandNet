@@ -15,6 +15,7 @@ def parse_args():
                       help="Aligner to use ('simalign' or 'dbalign').")
   parser.add_argument("--output_file", type=str, default="expandnet_step2_align.out.tsv",
                       help="Output file to save the file with alignments to.")
+  parser.add_argument("--join_char", type=str, default='_')
   
   return parser.parse_args()
 
@@ -56,7 +57,7 @@ elif args.aligner == 'dbalign':
     return(sorted(links))
 
   def align(lang_src, lang_tgt, tokens_src, tokens_tgt):
-    tokens_tgt = [a.replace("_", " ") for a in tokens_tgt]
+    tokens_tgt = [a.replace(JOIN_CHAR, " ") for a in tokens_tgt]
     alignment_spans = ali.new_align(tokens_src, tokens_tgt)
     return(spans_to_links(alignment_spans))
 
