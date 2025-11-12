@@ -56,6 +56,7 @@ elif args.aligner == 'dbalign':
     return(sorted(links))
 
   def align(lang_src, lang_tgt, tokens_src, tokens_tgt):
+    tokens_tgt = [a.replace("_", " ") for a in tokens_tgt]
     alignment_spans = ali.new_align(tokens_src, tokens_tgt)
     return(spans_to_links(alignment_spans))
 
