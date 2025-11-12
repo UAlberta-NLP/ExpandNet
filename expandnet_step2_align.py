@@ -21,6 +21,8 @@ def parse_args():
 
 args = parse_args()
 
+JOIN_CHAR = args.join_char
+
 print(f"Languages:   {args.lang_src} -> {args.lang_tgt}")
 print(f"Aligner:     {args.aligner}")
 print(f"Input file:  {args.translation_df_file}")

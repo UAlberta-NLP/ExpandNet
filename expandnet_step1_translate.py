@@ -14,6 +14,7 @@ def parse_args():
                       help="Target language (default: fr).")
   parser.add_argument("--output_file", type=str, default="expandnet_step1_translate.out.tsv",
                       help="File to store sentences and translations.")
+  parser.add_argument("--join_char", type=str, default='_')
   return parser.parse_args()
 
 # Parse the arguments.
@@ -62,22 +63,22 @@ except OSError:
   print(f"No spacy pipeline found for target language {args.lang_tgt}")
 
 
-def tokenize_sentence(sentence: str, lang: str, lemmatize: bool = False):
+def tokenize_sentence(sentence: str, lang: str, join_char: str, lemmatize: bool = False):
   doc = pipelines[lang](sentence)
   if lemmatize:
-    return ' '.join(token.lemma_.replace(' ', '_') for token in doc)
+    return ' '.join(token.lemma_.replace(' ', join_char) for token in doc)
   else:
-    return ' '.join(token.text.replace(' ', '_') for token in doc)
+    return ' '.join(token.text.replace(' ', join_char) for token in doc)
 
 translations = pipe(df_sent['text'].tolist(), batch_size=16)
 df_sent['translation'] = [t['translation_text'] for t in translations]
 
 df_sent['translation_token'] = df_sent['translation'].apply(
-    lambda s: tokenize_sentence(s, args.lang_tgt, False)
+    lambda s: tokenize_sentence(s, args.lang_tgt, args.join_char, False)
 )
 
 df_sent['translation_lemma'] = df_sent['translation'].apply(
-    lambda s: tokenize_sentence(s, args.lang_tgt, lemmatize)
+    lambda s: tokenize_sentence(s, args.lang_tgt, args.join_char, lemmatize)
 )
 
 print(f'Translation complete: {len(df_sent)} sentences processed\n')
