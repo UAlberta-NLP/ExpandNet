@@ -16,6 +16,8 @@ def parse_args():
   parser.add_argument("--alignment_file", type=str, default="expandnet_step2_align.out.tsv",
                       help="File containing the output of step 2 (alignment).")
   parser.add_argument("--output_file", type=str, default="expandnet_step3_project.out.tsv")
+  parser.add_argument("--token_info_file", type=str, default="expandnet_step3_project.token_info.tsv",
+                      help="(Helpful for understanding the process undergone.)")
   parser.add_argument("--join_char", type=str, default='_')
   return parser.parse_args()
 
@@ -100,27 +102,40 @@ print(f"Data prepared")
 # Project senses
 print("Projecting senses...")
 senses = set()
-for _, row in df_sent.iterrows():
+with open(args.token_info_file, 'w', encoding='utf-8') as f:
+ f.write("Token ID" + '\t' + "Source Lemma" + '\t' + "Source POS" + '\t' + "Translated Token" + '\t'  + "Translated Lemma" + '\t' + "Synset ID" + '\t' + "Projection is Valid?" + '\n')
+ for _, row in df_sent.iterrows():
+  tok_num = 0
   src = row['lemma_gold']
   tgt = row['translation_lemma'].split(' ')
+  tgt_tok = row['translation_token'].split(' ')
+  assert len(tgt) == len(tgt_tok)
   ali = ast.literal_eval(row['alignment'])
   bns = row['bn_gold']
+  sent_id = row['sentence_id']
 
   for i, bn in enumerate(bns):
+    tok_id = sent_id + f".s{tok_num:03d}"
     if not str(bn)[:3] == 'bn:':
       continue
+    tok_num += 1
     alignment_indices = get_alignments(ali, i)
     if len(alignment_indices) > 1:
       candidates = [args.join_char.join([tgt[j] for j in alignment_indices])]
+      t_candidates = [args.join_char.join([tgt_tok[j] for j in alignment_indices])]
     elif len(alignment_indices) == 1:
       candidates = [tgt[alignment_indices[0]]]
+      t_candidates = [tgt_tok[alignment_indices[0]]]
     else:
       candidates = []
+      t_candidates = []
 
     if candidates:
-      for candidate in candidates:
+      for t_candidate, candidate in zip(t_candidates, candidates):
         source = src[i]
         
+        src_pos = bn[-1].upper()
+        f.write(tok_id + '\t' + source + '\t' + src_pos + '\t' + t_candidate + '\t'  + candidate + '\t' + bn + '\t' + str(is_valid_translation(source, candidate, dict_wik)) + '\n')
         if is_valid_translation(source, candidate, dict_wik):
           senses.add((bn, candidate))
 
