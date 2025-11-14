@@ -94,5 +94,5 @@ Takes two arguments:
 Output is an evaluation for each sense, and overall statistics.
 
 ```bash 
-python eval_release.py se_gold_fr.tsv expandnet_step3_project.out.tsv
+python eval_release.py res/data/se_gold_es.tsv expandnet_step3_project.out.tsv
 ```
