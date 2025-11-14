@@ -103,7 +103,7 @@ print(f"Data prepared")
 print("Projecting senses...")
 senses = set()
 with open(args.token_info_file, 'w', encoding='utf-8') as f:
- f.write("Token ID" + '\t' + "Source Lemma" + '\t' + "Source POS" + '\t' + "Translated Token" + '\t'  + "Translated Lemma" + '\t' + "Synset ID" + '\t' + "Projection is Valid?" + '\n')
+ f.write("Token ID" + '\t' + "Source Lemma" + '\t' + "Source POS" + '\t' + "Translated Token" + '\t'  + "Translated Lemma" + '\t' + "Synset ID" + '\t' + "Link in Dictionary?" + '\n')
  for _, row in df_sent.iterrows():
   tok_num = 0
   src = row['lemma_gold']
