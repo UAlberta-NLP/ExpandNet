@@ -9,7 +9,7 @@ def parse_args():
                       help="Source language (default: en).")
   parser.add_argument("--lang_tgt", type=str, default="fr", 
                       help="Target language (default: fr).")
-  parser.add_argument("--dict", type=str, default="wikpan-en-es.tsv",
+  parser.add_argument("--dict", type=str, default="wikpan-en-fr.tsv",
                       help="Use a dictionary with DBAlign. This argument should be a path, the string 'bn' if you are using babelnet, or can be none if you are using simalign.")
   parser.add_argument("--aligner", type=str, default="dbalign",
                       help="Aligner to use ('simalign' or 'dbalign').")
