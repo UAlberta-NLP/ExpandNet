@@ -92,10 +92,16 @@ lemma_gold_lists = (
        .reset_index(name="lemma_gold")
 )
 
+token_gold_lists = (
+    df_src.groupby("sentence_id")["text"]
+       .apply(list)
+       .reset_index(name="token_gold")
+)
+
 # Merge back into df_sent
 df_sent = (
     df_sent.merge(bn_gold_lists, on="sentence_id", how="left")
-           .merge(lemma_gold_lists, on="sentence_id", how="left")
+           .merge(lemma_gold_lists, on="sentence_id", how="left").merge(token_gold_lists, on="sentence_id", how="left")
 )
 print(f"Data prepared")
 
@@ -103,10 +109,12 @@ print(f"Data prepared")
 print("Projecting senses...")
 senses = set()
 with open(args.token_info_file, 'w', encoding='utf-8') as f:
- f.write("Token ID" + '\t' + "Source Lemma" + '\t' + "Source POS" + '\t' + "Translated Token" + '\t'  + "Translated Lemma" + '\t' + "Synset ID" + '\t' + "Link in Dictionary?" + '\n')
+ f.write("Token ID" + '\t' + "Source Token" + '\t' + "Source Lemma" + '\t' + "Source POS" + '\t' + "Translated Token" + '\t'  + "Translated Lemma" + '\t' + "Synset ID" + '\t' + "Link in Dictionary?" + '\n')
  for _, row in df_sent.iterrows():
   tok_num = 0
   src = row['lemma_gold']
+  src_tok = row['token_gold']
+  assert len(src) == len(src_tok)
   tgt = row['translation_lemma'].split(' ')
   tgt_tok = row['translation_token'].split(' ')
   assert len(tgt) == len(tgt_tok)
@@ -115,8 +123,11 @@ with open(args.token_info_file, 'w', encoding='utf-8') as f:
   sent_id = row['sentence_id']
 
   for i, bn in enumerate(bns):
+    source = src[i]
+    tok = src_tok[i]
     tok_id = sent_id + f".s{tok_num:03d}"
     if not str(bn)[:3] == 'bn:':
+      f.write('wf' + '\t' + tok + '\t' + source + '\t' + ' ' + '\t'  + ' ' + '\t' + ' ' + '\t' + ' ' + '\n')
       continue
     tok_num += 1
     alignment_indices = get_alignments(ali, i)
@@ -132,10 +143,10 @@ with open(args.token_info_file, 'w', encoding='utf-8') as f:
 
     if candidates:
       for t_candidate, candidate in zip(t_candidates, candidates):
-        source = src[i]
+        
         
         src_pos = bn[-1].upper()
-        f.write(tok_id + '\t' + source + '\t' + src_pos + '\t' + t_candidate + '\t'  + candidate + '\t' + bn + '\t' + str(is_valid_translation(source, candidate, dict_wik)) + '\n')
+        f.write(tok_id + '\t' + tok + '\t' + source + '\t' + src_pos + '\t' + t_candidate + '\t'  + candidate + '\t' + bn + '\t' + str(is_valid_translation(source, candidate, dict_wik)) + '\n')
         if is_valid_translation(source, candidate, dict_wik):
           senses.add((bn, candidate))
 
