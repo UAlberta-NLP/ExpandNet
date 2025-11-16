@@ -87,9 +87,18 @@ class DBAligner:
         
       # Check, in the provided dictionary, if these are synonyms.
       
-      if first_word in self.dict and second_word in self.dict[first_word]:
+      first_word_first_form = first_word.replace(' ', '_')
+      first_word_second_form = first_word.replace('_', ' ')
+      
+      
+      
+      if first_word_first_form in self.dict and second_word in self.dict[first_word_first_form]:
           
           return 'strict'
+      elif first_word_second_form in self.dict and second_word in self.dict[first_word_second_form]:
+          
+          return 'strict'
+      
       if first_word in ENGLISH_FUNCTION_WORDS and first_lang == 'en':
         lemma1 = first_word
         lemma2 = second_word
@@ -138,7 +147,7 @@ class DBAligner:
                         self.dict[input_word] = [translation]
                         
     def new_align(self, src, tgt, steps=3):
-        
+        # print("using", steps, src, tgt)
         # Use tokenization if the input is a list, otherwise tokenize ourselves using spaces
         if isinstance(src, str):
             source_words = src.split()
@@ -833,7 +842,8 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 word_two = '_'.join([tgt_wds[el] for el in j])
           
             # Check for synonyms
-            if alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'strict': # this is true if theyre the same without lemmatizing them
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
              
                 possible_alignment_indices_for_this.append(j)
                 if isinstance(j, int):
@@ -841,7 +851,7 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 elif isinstance(j, list):
                     for guy in j:
                         assert guy in unaligned_target_indices
-            elif alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'loose': # if they're the same only when lemmatized
+            elif are_syn == 'loose': # if they're the same only when lemmatized
                 less_strict_possible_alignment_indices_for_this.append(j)
            
         
@@ -890,7 +900,8 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
             elif isinstance(i, list):
                 word_one = '_'.join([src_wds[el] for el in i])
            
-            if alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'strict': # this is true if theyre the same without lemmatizing them
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
                 possible_alignment_indices_for_this.append(i)
                 
                 if isinstance(i, int):
@@ -898,7 +909,7 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 elif isinstance(i, list):
                     for guy in i:
                         assert guy in unaligned_source_indices
-            elif alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'loose': # if they're the same only when lemmatized
+            elif are_syn == 'loose': # if they're the same only when lemmatized
                 less_strict_possible_alignment_indices_for_this.append(i)
         for x in possible_alignment_indices_for_this:
             if isinstance(x, int):
@@ -926,7 +937,10 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
     
     # If nothing has changed, we're done
     if proposed_alignments == previous_cycle:
+        
         unfinished = False
+  
+  
                     
 def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, alignobj, strict_intersect=False):
   unfinished = True
@@ -949,15 +963,15 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 
                 word_two = tgt_wds[j]
             
-            
-            if alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'strict': # this is true if theyre the same without lemmatizing them
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
                 possible_alignment_indices_for_this.append(j)
                 if isinstance(j, int):
                     assert j in unaligned_target_indices
                 elif isinstance(j, list):
                     for guy in j:
                         assert guy in unaligned_target_indices
-            elif alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'loose': # if they're the same only when lemmatized
+            elif are_syn == 'loose': # if they're the same only when lemmatized
                 less_strict_possible_alignment_indices_for_this.append(j)
         
             
@@ -1009,14 +1023,14 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
             if isinstance(i, int):
                 word_one = src_wds[i]
             
-            
-            if alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'strict': # this is true if theyre the same without lemmatizing them
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
                 possible_alignment_indices_for_this.append(i)
                 # print(word_one, word_two)
                 if isinstance(i, int):
                     assert i in unaligned_source_indices
                 
-            elif alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl) == 'loose': # if they're the same only when lemmatized
+            elif are_syn == 'loose': # if they're the same only when lemmatized
                 less_strict_possible_alignment_indices_for_this.append(i)
         for x in possible_alignment_indices_for_this:
             if isinstance(x, int):
