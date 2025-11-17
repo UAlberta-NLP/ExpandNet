@@ -15,10 +15,10 @@ STEM_CACHE = {}
 POS_CACHE = {}
 
 LEMMATIZERS = {'es': spacy.load("es_core_news_lg"), 
-               #'it': spacy.load("it_core_news_lg"), 
+               'it': spacy.load("it_core_news_lg"), 
                'fr': spacy.load("fr_core_news_lg"), 
                'en': spacy.load("en_core_web_lg"), 
-               # 'ro': spacy.load("ro_core_news_lg"), 
+               'ro': spacy.load("ro_core_news_lg"), 
                'zh': spacy.load("zh_core_web_lg"),
                'xx': spacy.load('xx_ent_wiki_sm')
                 }
