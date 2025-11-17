@@ -41,7 +41,7 @@ You can do this with:
 python3 -m spacy download <MODELNAME>
 ```
 
-the models included employed in the code by default are es_core_news_lg, it_core_news_lg, fr_core_news_lg, en_core_web_lg, ro_core_news_lg, zh_core_web_lg, xx_ent_wiki_sm
+The models employed in the code by default are: en_core_web_lg, es_core_news_lg, fr_core_news_lg, it_core_news_lg, ro_core_news_lg, zh_core_web_lg, xx_ent_wiki_sm
 
 Takes six arguments:
 1. translation_df_file: The address of the .tsv created by Step 1 (or created independently if working with an unsupported language pair)
