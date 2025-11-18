@@ -207,6 +207,13 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+#  Claude Code is an AI-powered CLI for Claude. Ignore state and configuration files.
+#  Learn more at https://code.claude.com
+.claude/
+.claudesync
+CLAUDE.md
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

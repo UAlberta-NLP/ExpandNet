@@ -30,18 +30,18 @@ Note that lemmatization is recommended, but not strictly necessary. The lemmatiz
 
 ## Step 2 Align
 
-For the alignment step, it is recommended to use DBAlign, for which a dictionary is required. 
+For the alignment step, it is recommended to use DBAlign, for which a dictionary is required.
 Dictionaries must be .tsv files, where each row contains a source side word, then a tab character, then a space-separated list of possible target-side words that it may be translated as. Underscores should be used in place of spaces for multi-word expressions, or any tokens with spaces within them.
 An example, wikpan-en-es.tsv is included to demonstrate the format these dictioaries should take.
 
-Note: For this step, you may need to download additional spaCy language models.
+Note: Please refer to `requirements.txt` for dependencies. For this step, you may need to download additional spaCy language models.
 You can do this with:
 
-```bash 
+```bash
 python3 -m spacy download <MODELNAME>
 ```
 
-the models included employed in the code by default are es_core_news_lg, it_core_news_lg, fr_core_news_lg, en_core_web_lg, ro_core_news_lg, zh_core_web_lg, xx_ent_wiki_sm
+The models employed in the code by default are: en_core_web_lg, es_core_news_lg, fr_core_news_lg, it_core_news_lg, ro_core_news_lg, zh_core_web_lg, xx_ent_wiki_sm
 
 Takes six arguments:
 1. translation_df_file: The address of the .tsv created by Step 1 (or created independently if working with an unsupported language pair)

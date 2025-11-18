@@ -1,0 +1,21 @@
+# Core dependencies
+pandas>=1.5.0
+spacy>=3.0.0
+transformers>=4.0.0
+torch>=1.10.0
+
+# Alignment tools
+simalign>=0.3.0
+pandarallel>=1.6.0
+
+# BabelNet (optional - only needed if using --dict bn)
+# babelnet>=5.0.0
+
+# SpaCy language models (install separately with python -m spacy download <model>)
+# en_core_web_lg
+# es_core_news_lg
+# fr_core_news_lg
+# it_core_news_lg
+# ro_core_news_lg
+# zh_core_web_lg
+# xx_ent_wiki_sm
