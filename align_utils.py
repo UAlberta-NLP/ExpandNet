@@ -109,7 +109,7 @@ class DBAligner:
                   
                     return False
                 
-       
+                    
         lemma1 = '_'.join([get_lemma(a, first_lang) for a in first_word.split('_')])
         lemma2 = '_'.join([get_lemma(a, second_lang) for a in second_word.split('_')])
       else:
