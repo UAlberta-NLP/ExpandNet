@@ -146,7 +146,7 @@ with open(args.token_info_file, 'w', encoding='utf-8') as f:
         
         
         src_pos = bn[-1].upper()
-        f.write(tok_id + '\t' + tok + '\t' + source + '\t' + src_pos + '\t' + t_candidate + '\t'  + candidate + '\t' + bn + '\t' + str(is_valid_translation(source, candidate, dict_wik)) + '\n')
+        f.write(tok_id + '\t' + tok + '\t' + source + '\t' + src_pos + '\t' + t_candidate + '\t'  + candidate + '\t' + bn + '\t' + str(is_valid_translation(source, candidate, dict_wik)) + '\t' + ' '.join(tgt_tok) + '\n')
         if is_valid_translation(source, candidate, dict_wik):
           senses.add((bn, candidate))
 

@@ -47,6 +47,17 @@ DO_NOT_CALL_BABELNET = {'«', '»', '¿', '?', '°', '¡', '.', ',', '!', '?', '
 ALIGNMENT_CACHE = {}
 SYNSET_CACHED_DICT = {}
 
+
+def convert_quad_to_tuple(ours):
+    ans = []
+    for align in ours.split():
+        sb, se, tb, te = align.split('-')
+        sb, se, tb, te = int(sb), int(se), int(tb), int(te)
+        for x in range(sb, se + 1):
+
+            for y in range(tb, te + 1):
+                ans.append((x, y))
+    return ans
     
 class DBAligner:
     def __init__(self, src_l, tar_l, dictionary='BN', path_to_dict=None):
@@ -164,7 +175,9 @@ class DBAligner:
         unal_source_indices = list(range(len(source_words)))
         unal_target_indices = list(range(len(target_words)))
     
-    
+        if steps == 4:
+                intersectmwe_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
+              
     
         if steps > 0: 
             intersection_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
@@ -176,7 +189,8 @@ class DBAligner:
         if steps > 2:
             simalign_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, self)   
        
-    
+        # print("FINALLY:")
+        # print(aligns.string_of_pairs(source_words, target_words))
    
         answer = aligns.string_version()
     
@@ -216,7 +230,11 @@ class AlignlistObj:
       return False
   
   
-  
+  def string_of_pairs(self, src_tok, tgt_tok):
+      ans = ''
+      for guy in convert_quad_to_tuple(self.string_version()):
+          ans += src_tok[guy[0]] + ' ' + tgt_tok[guy[1]] + '\n'
+      return ans
       
         
   def print_this(self, pair):
@@ -235,7 +253,7 @@ class AlignlistObj:
           s_start, s_end = min(pair[0]), max(pair[0])
           t_start, t_end = min(pair[1]), max(pair[1])
       else:
-          # print(pair)
+          
           assert False
       for i in range(s_start, s_end + 1):
         ans += self.source[i] + ' '
@@ -843,8 +861,9 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
           
             # Check for synonyms
             are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            
             if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
-             
+                
                 possible_alignment_indices_for_this.append(j)
                 if isinstance(j, int):
                     assert j in unaligned_target_indices
@@ -852,7 +871,10 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                     for guy in j:
                         assert guy in unaligned_target_indices
             elif are_syn == 'loose': # if they're the same only when lemmatized
+                
                 less_strict_possible_alignment_indices_for_this.append(j)
+           
+            
            
         
             
@@ -939,6 +961,9 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
     if proposed_alignments == previous_cycle:
         
         unfinished = False
+  
+
+   
   
   
                     
@@ -1058,6 +1083,11 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
         # If nothing has changed, we're done!
         unfinished = False
   
+  
+    
+def intersectmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner):
+    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, False, False)
+    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, False, True)
       
 def are_aligned(ind_one, ind_two, alignments):
     for al in alignments:
