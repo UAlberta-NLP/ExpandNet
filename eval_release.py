@@ -40,6 +40,7 @@ def file_to_pairs(f):
     with open(f, 'r') as fh:
         for i, line in enumerate(fh):
             fields = lowercase_and_remove_zero_width(line).strip().split('\t')
+            fields[1] = fields[1].replace(' ', '_')
             if len(fields) != 2:
                 raise ValueError(f"File {f}, line {i+1}: expected 2 fields, got {len(fields)}")
             pair = tuple(fields)

@@ -60,9 +60,10 @@ def convert_quad_to_tuple(ours):
     return ans
     
 class DBAligner:
-    def __init__(self, src_l, tar_l, dictionary='BN', path_to_dict=None):
+    def __init__(self, src_l, tar_l, dictionary='BN', path_to_dict=None, join_char='_'):
         self.source_language = src_l
         self.target_language = tar_l
+        self.join_char = join_char
         if dictionary.lower() == 'BN'.lower():
             self.dict_in_use = 'bn'
             self.dict = {}
@@ -85,21 +86,24 @@ class DBAligner:
         else:
             assert False, "please pass third argument as either 'BN' or 'Custom'"
             
-    def are_synonyms_by_dictionary(self, word_one, word_two, lang_two, lang_one):
-        # Check if words are synonyms
+    def are_synonyms_by_dictionary(self, word_one, word_two, lang_two, lang_one, w1_atomic=True, w2_atomic=True):
         if self.dict_in_use == 'custom':
-            return self.are_synonyms_by_custom(word_one, word_two, lang_two, lang_one)
+            total_ans =  self.are_synonyms_by_custom(word_one, word_two, lang_two, lang_one)
         elif self.dict_in_use == 'bn':
-            return are_synonyms_by_bn(word_one, word_two, lang_two, lang_one)
+            total_ans = are_synonyms_by_bn(word_one, word_two, lang_two, lang_one)
         else:
             assert False
+        if total_ans:
+            return total_ans
+        independently_synonyms = False
+        return False
             
     def are_synonyms_by_custom(self, first_word, second_word, second_lang, first_lang):
         
       # Check, in the provided dictionary, if these are synonyms.
       
-      first_word_first_form = first_word.replace(' ', '_')
-      first_word_second_form = first_word.replace('_', ' ')
+      first_word_first_form = first_word.replace(' ', self.join_char)
+      first_word_second_form = first_word.replace(self.join_char, ' ')
       
       
       
@@ -113,16 +117,16 @@ class DBAligner:
       if first_word in ENGLISH_FUNCTION_WORDS and first_lang == 'en':
         lemma1 = first_word
         lemma2 = second_word
-      elif '_' in second_word or '_' in first_word:
-        for guy in first_word.split('_') + second_word.split('_'):
+      elif self.join_char in second_word or self.join_char in first_word:
+        for guy in first_word.split(self.join_char) + second_word.split(self.join_char):
             
                 if guy in PUNCTUATION:
                   
                     return False
                 
                     
-        lemma1 = '_'.join([get_lemma(a, first_lang) for a in first_word.split('_')])
-        lemma2 = '_'.join([get_lemma(a, second_lang) for a in second_word.split('_')])
+        lemma1 = self.join_char.join([get_lemma(a, first_lang) for a in first_word.split(self.join_char)])
+        lemma2 = self.join_char.join([get_lemma(a, second_lang) for a in second_word.split(self.join_char)])
       else:
         lemma1 = get_lemma(first_word, first_lang)
         lemma2 = get_lemma(second_word, second_lang)
@@ -131,6 +135,7 @@ class DBAligner:
       if lemma1 in self.dict and (lemma2 in self.dict[lemma1] or second_word in self.dict[lemma1] or (first_word in self.dict and lemma2 in self.dict[first_word])):
          
           return 'loose'
+    
       return False
   
     def using_custom(self):
@@ -148,14 +153,14 @@ class DBAligner:
                 stripped_line = line.strip()
                 assert len(stripped_line.split('\t')) == 2 or len(stripped_line) == 0, "Expected each line in dictionary file to have one tab character. The offending line is: " + str(line)
                 input_word, translations = stripped_line.split('\t')
-                input_word = input_word.replace(' ', '_')
-                    
+                input_word = input_word.replace(' ', self.join_char).replace('_', self.join_char)
+               
                 found_words.add(input_word)
                 for translation in translations.split():
                     if input_word in self.dict:
-                        self.dict[input_word].append(translation)
+                        self.dict[input_word].append(translation.replace(' ', self.join_char).replace('_', self.join_char))
                     else:
-                        self.dict[input_word] = [translation]
+                        self.dict[input_word] = [translation.replace(' ', self.join_char).replace('_', self.join_char)]
                         
     def new_align(self, src, tgt, steps=3):
         # print("using", steps, src, tgt)
@@ -176,15 +181,15 @@ class DBAligner:
         unal_target_indices = list(range(len(target_words)))
     
         if steps == 4:
-                intersectmwe_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
+                intersectmwe_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self, self.join_char)
               
     
         if steps > 0: 
-            intersection_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
+            intersection_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self, self.join_char)
         
         if steps > 1:
-            babelmwe_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
-            babelnet_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self)
+            babelmwe_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self, self.join_char)
+            babelnet_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, False, self, self.join_char, False)
         
         if steps > 2:
             simalign_pass(self.source_language, self.target_language, source_words, target_words, aligns, unal_source_indices, unal_target_indices, self)   
@@ -193,7 +198,7 @@ class DBAligner:
         # print(aligns.string_of_pairs(source_words, target_words))
    
         answer = aligns.string_version()
-    
+        
         return answer
                 
     
@@ -360,10 +365,10 @@ def get_synsets_cachable(word, lang, pos=None):
         return SYNSET_CACHED_DICT[index]
     
 
-def are_synonyms_by_bn(word1, word2, lang2, lang1="en"):
-   
-    word1 = word1.replace(' ', '_')
-    word2 = word2.replace(' ', '_')
+def are_synonyms_by_bn(word1, word2, lang2, j_c, lang1):
+    
+    word1 = word1.replace(' ', j_c)
+    word2 = word2.replace(' ', j_c)
     
     # certain tokens crash BN
     if word1 in DO_NOT_CALL_BABELNET or word2 in DO_NOT_CALL_BABELNET:
@@ -371,7 +376,7 @@ def are_synonyms_by_bn(word1, word2, lang2, lang1="en"):
     
     for element in DO_NOT_CALL_BABELNET:
         if element in word1 or element in word2:
-            if element != '_':
+            if element != j_c:
                 return False
             
     # Function words shouldn't be lemmatized.
@@ -379,15 +384,15 @@ def are_synonyms_by_bn(word1, word2, lang2, lang1="en"):
     if word1 in ENGLISH_FUNCTION_WORDS and lang1 == 'en':
         lemma1 = word1
         lemma2 = word2
-    elif '_' in word2 or '_' in word1:
-        for guy in word1.split('_') + word2.split('_'):
+    elif j_c in word2 or j_c in word1:
+        for guy in word1.split(j_c) + word2.split(j_c):
             
                 if guy in PUNCTUATION:
                     return False
                 
        
-        lemma1 = '_'.join([get_lemma(a, lang1) for a in word1.split('_')])
-        lemma2 = '_'.join([get_lemma(a, lang2) for a in word2.split('_')])
+        lemma1 = j_c.join([get_lemma(a, lang1) for a in word1.split(j_c)])
+        lemma2 = j_c.join([get_lemma(a, lang2) for a in word2.split(j_c)])
     else:
         lemma1 = get_lemma(word1, lang1)
         lemma2 = get_lemma(word2, lang2)
@@ -484,7 +489,7 @@ def pos_match(src_lang, tgt_lang, pos1, pos2, w1, w2, alignobj):
         return True
     if pos1 in ['NOUN', 'VERB'] and pos2 in ['NOUN', 'VERB']: # really losing the plot of this function making any sense, but this is needed sometimes
         return True
-    if alignobj.are_synonyms_by_dictionary(w1, w2, tgt_lang, src_lang):
+    if alignobj.are_synonyms_by_dictionary(w1, w2, tgt_lang, src_lang, False, False):
         return True
     return False
 
@@ -816,15 +821,15 @@ def consecutive_subsequences(nums):
 
 
     
-def intersection_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner):
-    babelnet_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, True)
+def intersection_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, j_c):
+    babelnet_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, j_c, True)
     
     
 def lemmatize(list_of_words, language):
     return [get_lemma(a, language) for a in list_of_words]
     
     
-def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, alignobj, strict_intersect=False, use_lemmas=False):
+def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, alignobj, j_c, strict_intersect=False, use_lemmas=False):
   unfinished = True
   
   if use_lemmas:
@@ -842,7 +847,7 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
         if isinstance(i, int):
             word_one = src_wds[i]
         elif isinstance(i, list):
-            word_one = '_'.join([src_wds[el] for el in i])
+            word_one = j_c.join([src_wds[el] for el in i])
        
         
         possible_alignment_indices_for_this = []
@@ -857,10 +862,10 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
             if isinstance(j, int):
                 word_two = tgt_wds[j]
             elif isinstance(j, list):
-                word_two = '_'.join([tgt_wds[el] for el in j])
+                word_two = j_c.join([tgt_wds[el] for el in j])
           
             # Check for synonyms
-            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl, i in unaligned_source_indices, j in unaligned_target_indices)
             
             if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
                 
@@ -910,7 +915,7 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 
                 word_two = tgt_wds[j]
         elif isinstance(j, list):
-                word_two = '_'.join([tgt_wds[el] for el in j])
+                word_two = j_c.join([tgt_wds[el] for el in j])
    
         possible_alignment_indices_for_this = []
         less_strict_possible_alignment_indices_for_this = []
@@ -920,9 +925,9 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
             if isinstance(i, int):
                 word_one = src_wds[i]
             elif isinstance(i, list):
-                word_one = '_'.join([src_wds[el] for el in i])
+                word_one = j_c.join([src_wds[el] for el in i])
            
-            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl)
+            are_syn = alignobj.are_synonyms_by_dictionary(word_one, word_two, tl, sl, i in unaligned_source_indices, j in unaligned_target_indices)
             if are_syn == 'strict': # this is true if theyre the same without lemmatizing them
                 possible_alignment_indices_for_this.append(i)
                 
@@ -967,7 +972,7 @@ def babelmwe_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
   
   
                     
-def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, alignobj, strict_intersect=False):
+def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, alignobj, j_c, strict_intersect):
   unfinished = True
   
   # Repeat until nothing changes
@@ -979,7 +984,7 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
         if isinstance(i, int):
             word_one = src_wds[i]
         elif isinstance(i, list):
-            word_one = '_'.join([src_wds[el] for el in i])
+            word_one = j_c.join([src_wds[el] for el in i])
      
         possible_alignment_indices_for_this = []
         less_strict_possible_alignment_indices_for_this = []
@@ -1040,7 +1045,7 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
                 
                 word_two = tgt_wds[j]
         elif isinstance(j, list):
-                word_two = '_'.join([tgt_wds[el] for el in j])
+                word_two = j_c.join([tgt_wds[el] for el in j])
    
         possible_alignment_indices_for_this = []
         less_strict_possible_alignment_indices_for_this = []
@@ -1085,9 +1090,9 @@ def babelnet_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
   
   
     
-def intersectmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner):
-    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, False, False)
-    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, False, True)
+def intersectmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, j_c):
+    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, j_c, False, False)
+    babelmwe_pass(src_lang, tar_lang, src_wds, tgt_wds, align_ans, unaligned_source_indices, unaligned_target_indices, strict_lemma, aligner, j_c, False, True)
       
 def are_aligned(ind_one, ind_two, alignments):
     for al in alignments:
@@ -1167,4 +1172,3 @@ def simalign_pass(sl, tl, src_wds, tgt_wds, align_ans, unaligned_source_indices,
         accept_all_alignments(proposed_alignments, align_ans, unaligned_source_indices, unaligned_target_indices, src_wds, tgt_wds)
         return 
    
-    

@@ -14,6 +14,12 @@ def parse_args():
                       help="Target language (default: fr).")
   parser.add_argument("--output_file", type=str, default="expandnet_step1_translate.out.tsv",
                       help="File to store sentences and translations.")
+  parser.add_argument(
+    "--no_pos",
+    action="store_false",
+    dest="pos_tag",
+    help="Optionally turn OFF the part-of-speech tagging which can be used downstream for filtering. (Default: tagging is ON)."
+)
   parser.add_argument("--join_char", type=str, default='_')
   return parser.parse_args()
 
@@ -69,6 +75,11 @@ def tokenize_sentence(sentence: str, lang: str, join_char: str, lemmatize: bool 
     return ' '.join(token.lemma_.replace(' ', join_char) for token in doc)
   else:
     return ' '.join(token.text.replace(' ', join_char) for token in doc)
+  
+def pos_tag_sentence(sentence: str, lang: str, join_char: str):
+  doc = pipelines[lang](sentence)
+  return ' '.join(token.pos_.replace(' ', join_char) for token in doc)
+
 
 translations = pipe(df_sent['text'].tolist(), batch_size=16)
 df_sent['translation'] = [t['translation_text'] for t in translations]
@@ -81,9 +92,17 @@ df_sent['translation_lemma'] = df_sent['translation'].apply(
     lambda s: tokenize_sentence(s, args.lang_tgt, args.join_char, lemmatize)
 )
 
+if args.pos_tag:
+  df_sent['translation_pos'] = df_sent['translation'].apply(
+    lambda s: pos_tag_sentence(s, args.lang_tgt, args.join_char)
+  )
+  cols = ['sentence_id', 'text', 'translation', 'lemma', 'translation_token', 'translation_lemma', 'translation_pos']
+else:
+  cols = ['sentence_id', 'text', 'translation', 'lemma', 'translation_token', 'translation_lemma']
+
 print(f'Translation complete: {len(df_sent)} sentences processed\n')
 
 print(f'Saving to "{args.output_file}"...')
-cols = ['sentence_id', 'text', 'translation', 'lemma', 'translation_token', 'translation_lemma']
+
 df_sent[cols].to_csv(args.output_file, sep='\t', index=False)
 print('Complete!')
