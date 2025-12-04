@@ -42,7 +42,7 @@ elif args.aligner == 'dbalign':
     ali = DBAligner(args.lang_src, args.lang_tgt)
   else:
     print("Initializing DBAlign with Provided Dictionary.")
-    ali = DBAligner(args.lang_src, args.lang_tgt, 'custom', args.dict)
+    ali = DBAligner(args.lang_src, args.lang_tgt, 'custom', args.dict, args.join_char)
 
   def spans_to_links(span_string):
     span_string = span_string.strip()
