@@ -81,7 +81,7 @@ def pos_match(pos_a, pos_b):
   
 def pos_map(in_pos):
   
-  if in_pos.lower() in ['a', 'v', 'r', 'n']:
+  if in_pos.lower() in ['a', 'v', 'r', 'n', 'x']:
     return in_pos.lower()
   
   POS_DICTIONARY = {'NOUN': 'n', 'PROPN': 'n', 'PRON': 'n', 'NUM': 'n',
