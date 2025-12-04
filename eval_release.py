@@ -11,13 +11,35 @@ def parse_args():
 
 args = parse_args()
 
+def remove_zero_width_characters(s: str) -> str:
+    
+    ZERO_WIDTH_CHARS = [
+        "\u200b",  # ZERO WIDTH SPACE
+        "\u200c",  # ZERO WIDTH NON-JOINER
+        "\u200d",  # ZERO WIDTH JOINER
+        "\u200e",  # LEFT-TO-RIGHT MARK
+        "\u200f",  # RIGHT-TO-LEFT MARK
+        "\u202a",  # LEFT-TO-RIGHT EMBEDDING
+        "\u202b",  # RIGHT-TO-LEFT EMBEDDING
+        "\u202c",  # POP DIRECTIONAL FORMATTING
+        "\u202d",  # LEFT-TO-RIGHT OVERRIDE
+        "\u202e",  # RIGHT-TO-LEFT OVERRIDE
+        "\ufeff",  # ZERO WIDTH NO-BREAK SPACE (BOM)
+    ]
+    for ch in ZERO_WIDTH_CHARS:
+        s = s.replace(ch, "")
+    return s
+
+    
+def lowercase_and_remove_zero_width(string):
+    return remove_zero_width_characters(string.lower())
 # Reads a TSV file into a list of tuples.
 def file_to_pairs(f):
     pairs = []
     seen = set()
     with open(f, 'r') as fh:
         for i, line in enumerate(fh):
-            fields = line.strip().split('\t')
+            fields = lowercase_and_remove_zero_width(line).strip().split('\t')
             if len(fields) != 2:
                 raise ValueError(f"File {f}, line {i+1}: expected 2 fields, got {len(fields)}")
             pair = tuple(fields)
@@ -29,7 +51,7 @@ def file_to_pairs(f):
 def file_to_set(f):
     """Read a file into a set of lines."""
     with open(f, 'r') as fh:
-        return set(line.strip() for line in fh if line.strip())
+        return set(lowercase_and_remove_zero_width(line).strip() for line in fh if line.strip())
 
 def safe_div(n, d):
     """Safely divide n by d, returning 0.0 if d is 0."""
@@ -44,7 +66,7 @@ print("Loading gold standard...")
 gold_bnid_to_lemmas = {}
 with open(args.file_gold, 'r') as f:
     for line in f:
-        line = line.strip()
+        line = lowercase_and_remove_zero_width(line.strip())
         if not line:  # skip empty lines
             continue
         try:
@@ -80,38 +102,45 @@ print()
 total_senses = sum(len(gold_bnid_to_lemmas[bnid]) for bnid in gold_bnid_to_lemmas)
 
 correct_senses = 0
+pred_senses = 0
 synsets_with_correct_sense = set()
 synsets_present_in_output = set()
 for (bnid, lemma) in senses_for_eval:
+    pred_senses += 1
     if bnid in gold_bnid_to_lemmas and lemma in gold_bnid_to_lemmas[bnid]:
         # print("GOOD_SENSE", bnid, lemma, sep='\t')
         correct_senses += 1
         synsets_with_correct_sense.add(bnid)
         synsets_present_in_output.add(bnid)
     else:
-        # print("BAD_SENSE", bnid, lemma, sep='\t')
+        # print("BAD_SENSE", lemma, gold_bnid_to_lemmas[bnid][:4], sep='\t')
+        
         synsets_present_in_output.add(bnid)
 
 num_synsets_with_correct_sense = len(synsets_with_correct_sense)
+num_synsets_with_projected_sense = len(synsets_present_in_output)
 
 print()
 
 ### SENSE-LEVEL EVALUATION
 sense_precision = safe_div(correct_senses, num_senses_for_eval)
 sense_recall = safe_div(correct_senses, total_senses)
+sense_adj_recall = safe_div(pred_senses, total_senses)
 sense_f1 = safe_div(2 * sense_precision * sense_recall, sense_precision + sense_recall)
 
 print(f"SENSE\tcorrect_senses:      {correct_senses}")
 print(f"SENSE\tnum_senses_for_eval: {num_senses_for_eval}")
 print(f"SENSE\ttotal_senses:        {total_senses}")
-print(f"SENSE\tPRECISION\t{round(100 * sense_precision, 1)}")
+print(f"\033[94mSENSE\tPRECISION\t{round(100 * sense_precision, 1)}\033[0m")
 print(f"SENSE\tRECALL\t{round(100 * sense_recall, 1)}")
+print(f"SENSE\tADJUSTED RECALL\t{round(100 * sense_adj_recall, 1)}")
 print(f"SENSE\tF1\t{round(100 * sense_f1, 1)}")
 print()
 
 ### SYNSET-LEVEL EVALUATION
 synset_precision = safe_div(num_synsets_with_correct_sense, num_senses_covered)
 synset_recall = safe_div(num_synsets_with_correct_sense, num_synsets_in_gold)
+synset_adj_recall = safe_div(num_synsets_with_projected_sense, num_synsets_in_gold)
 synset_f1 = safe_div(2 * synset_precision * synset_recall, synset_precision + synset_recall)
 core_coverage = safe_div(len(synsets_present_in_output & core_synsets), len(core_synsets))
 
@@ -119,8 +148,8 @@ print(f"SYNSET\tnum_synsets_with_correct_sense: {num_synsets_with_correct_sense}
 print(f"SYNSET\tnum_senses_covered:             {num_senses_covered}")
 print(f"SYNSET\tnum_synsets_in_gold:            {num_synsets_in_gold}")
 print(f"SYNSET\tPRECISION\t{round(100 * synset_precision, 1)}")
-print(f"SYNSET\tRECALL\t{round(100 * synset_recall, 1)}")
+print(f"\033[94mSYNSET\tRECALL\t{round(100 * synset_recall, 1)}\033[0m")
+print(f"\033[94mSYNSET\tADJUSTED RECALL\t{round(100 * synset_adj_recall, 1)}\033[0m")
 print(f"SYNSET\tF1\t{round(100 * synset_f1, 1)}")
 print(f"SYNSET\tCORE COVERAGE\t{round(100 * core_coverage, 1)}")
 print()
-
