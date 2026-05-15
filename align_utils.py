@@ -376,7 +376,7 @@ def read_function_words(file):
         engans.add("'s")
         return engans
     
-ENGLISH_FUNCTION_WORDS = read_function_words('/home/dbasil1/misc/WList.pm')
+ENGLISH_FUNCTION_WORDS = read_function_words('res/WList.pm')
 
 def get_lemmatizer(lang: str):
     if lang not in _LEMMATIZER_MODELS:
