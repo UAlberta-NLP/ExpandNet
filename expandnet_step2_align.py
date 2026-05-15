@@ -29,17 +29,20 @@ def parse_args():
 def replace_lemma_with_gold(in_df, gold_file_path):
     """Syncs the input DF with gold XML data using sentence_id as the key."""
     df_src = xml_utils.process_xml(gold_file_path)
-    df_gold = xml_utils.extract_sentences(df_src)
+    df_sent = xml_utils.extract_sentences(df_src)
 
-    if len(in_df) != len(df_gold):
-        raise ValueError(f"Row mismatch: in_df ({len(in_df)}) vs gold ({len(df_gold)})")
+    if len(in_df) != len(df_sent):
+        raise ValueError(
+            f"Row mismatch: in_df has {len(in_df)} rows, but gold df has {len(df_sent)} rows"
+        )
 
-    # Map both columns at once by setting the index to the join key
-    mapping = df_gold.set_index('sentence_id')[['lemma', 'text']]
-    
-    # Update in_df using the mapping
-    in_df = in_df.set_index('sentence_id')
-    in_df.update(mapping)
+    # 1. Create a "dictionary-like" mapping from the gold dataframe
+    lemma_map = df_sent.set_index('sentence_id')['lemma']
+    tokens_map = df_sent.set_index('sentence_id')['tokens']
+
+    # 2. Safely apply the mappings based on the sentence_id
+    in_df['lemma'] = in_df['sentence_id'].map(lemma_map)
+    in_df['tokens'] = in_df['sentence_id'].map(tokens_map)
     return in_df.reset_index()
 
 class AlignerFactory:
@@ -65,7 +68,7 @@ class AlignerFactory:
 
     def align(self, row):
         # Pre-processing
-        src_tokens = row['text'].split()
+        src_tokens = row['tokens'].split()
         tgt_tokens = row['translation_token'].split()
         src_lemmas = row['lemma'].split()
         tgt_lemmas = row['translation_lemma'].split()
