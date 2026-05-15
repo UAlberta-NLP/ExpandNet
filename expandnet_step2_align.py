@@ -3,6 +3,29 @@ import pandas as pd
 import xml_utils
 from tqdm import tqdm
 
+def parse_args():
+  parser = argparse.ArgumentParser(description="Run ExpandNet on XLWSD dev set (R17).")
+  parser.add_argument("--translation_df_file", type=str, default="expandnet_step1_translate.out.tsv",
+                      help="Path to the TSV file containing tokenized translated sentences.")
+  parser.add_argument("--src_data", type=str, default="semcor_en.data.dev.xml",
+                      help="Path to the XLWSD XML corpus file.")
+  parser.add_argument("--lang_src", type=str, default="en", 
+                      help="Source language (default: en).")
+  parser.add_argument("--lang_tgt", type=str, default="fr", 
+                      help="Target language (default: fr).")
+  parser.add_argument("--dictionary", type=str, default="res/dicts/wikpan-en-fr.tsv",
+                      help="Use a dictionary with DBAlign. This argument should be a path, the string 'bn' if you are using babelnet, or can be none if you are using simalign.")
+  parser.add_argument("--aligner", type=str, default="dbalign",
+                      help="Aligner to use ('simalign' or 'dbalign').")
+  parser.add_argument("--output_file", type=str, default="expandnet_step2_align.out.tsv",
+                      help="Output file to save the file with alignments to.")
+  parser.add_argument("--num_workers", type=int, default=1,
+                      help="Number of workers to paralellize the alignment computation over. More than one is not recommended on Windows or less powerful machines. (Default: 1)")
+  parser.add_argument("--source_join_char", type=str, default='_')
+  parser.add_argument("--target_join_char", type=str, default='_')
+  
+  return parser.parse_args()
+
 def replace_lemma_with_gold(in_df, gold_file_path):
     """Syncs the input DF with gold XML data using sentence_id as the key."""
     df_src = xml_utils.process_xml(gold_file_path)
