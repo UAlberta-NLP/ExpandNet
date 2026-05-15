@@ -35,7 +35,7 @@ def replace_lemma_with_gold(in_df, gold_file_path):
         raise ValueError(f"Row mismatch: in_df ({len(in_df)}) vs gold ({len(df_gold)})")
 
     # Map both columns at once by setting the index to the join key
-    mapping = df_gold.set_index('sentence_id')[['lemma', 'tokens']]
+    mapping = df_gold.set_index('sentence_id')[['lemma', 'text']]
     
     # Update in_df using the mapping
     in_df = in_df.set_index('sentence_id')
@@ -65,7 +65,7 @@ class AlignerFactory:
 
     def align(self, row):
         # Pre-processing
-        src_tokens = row['tokens'].split()
+        src_tokens = row['text'].split()
         tgt_tokens = row['translation_token'].split()
         src_lemmas = row['lemma'].split()
         tgt_lemmas = row['translation_lemma'].split()
