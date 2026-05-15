@@ -3,7 +3,7 @@ import pandas as pd
 import spacy
 from transformers import pipeline
 import xml_utils
-
+from torch import cuda
 from tqdm import tqdm
 
 def parse_args():
@@ -52,7 +52,7 @@ assert translation_system in ['gpt', 'helsinki']
 if translation_system == 'helsinki':
  tr_model = f"Helsinki-NLP/opus-mt-{args.lang_src}-{args.lang_tgt}"
  try:
-  pipe = pipeline("translation", model=tr_model, device=0)
+  pipe = pipeline("translation", model=tr_model, device=0 if cuda.is_available() else -1)
  except OSError:
   raise RuntimeError(f"Unsupported language pair: {args.lang_src} -> {args.lang_tgt}")
  except ValueError:

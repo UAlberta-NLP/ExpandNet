@@ -1,0 +1,13 @@
+openai==2.36.0
+pandarallel==1.6.5
+pandas==3.0.3
+simalign==0.4
+spacy==3.8.14
+torch==2.12.0
+tqdm==4.67.3
+en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl#sha256=293e9547a655b25499198ab15a525b05b9407a75f10255e405e8c3854329ab63
+es_core_news_lg @ https://github.com/explosion/spacy-models/releases/download/es_core_news_lg-3.8.0/es_core_news_lg-3.8.0-py3-none-any.whl#sha256=7c6c212715a12f31aacde3361754436945ff7376fb24cde57d0c277c9c9b050b
+transformers==4.57.6
+
+# BabelNet (optional - only needed if using --dict bn)
+# babelnet>=5.0.0

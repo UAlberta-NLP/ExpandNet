@@ -1,136 +1,96 @@
 import argparse
 import pandas as pd
 import xml_utils
+from tqdm import tqdm
 
 def replace_lemma_with_gold(in_df, gold_file_path):
-    
-    # Process the gold XML and extract sentences
+    """Syncs the input DF with gold XML data using sentence_id as the key."""
     df_src = xml_utils.process_xml(gold_file_path)
-    df_sent = xml_utils.extract_sentences(df_src)
-  
-    # Make sure the DataFrames have the same length
-    if len(in_df) != len(df_sent):
-        raise ValueError(
-            f"Row mismatch: in_df has {len(in_df)} rows, but gold df has {len(df_sent)} rows"
-        )
+    df_gold = xml_utils.extract_sentences(df_src)
 
-    # 1. Create a "dictionary-like" mapping from the gold dataframe
-    lemma_map = df_sent.set_index('sentence_id')['lemma']
-    tokens_map = df_sent.set_index('sentence_id')['tokens']
+    if len(in_df) != len(df_gold):
+        raise ValueError(f"Row mismatch: in_df ({len(in_df)}) vs gold ({len(df_gold)})")
 
-    # 2. Safely apply the mappings based on the sentence_id
-    in_df['lemma'] = in_df['sentence_id'].map(lemma_map)
-    in_df['tokens'] = in_df['sentence_id'].map(tokens_map)
+    # Map both columns at once by setting the index to the join key
+    mapping = df_gold.set_index('sentence_id')[['lemma', 'tokens']]
     
-    return in_df
-  
-def parse_args():
-  parser = argparse.ArgumentParser(description="Run ExpandNet on XLWSD dev set (R17).")
-  parser.add_argument("--translation_df_file", type=str, default="expandnet_step1_translate.out.tsv",
-                      help="Path to the TSV file containing tokenized translated sentences.")
-  parser.add_argument("--src_data", type=str, default="semcor_en.data.dev.xml",
-                      help="Path to the XLWSD XML corpus file.")
-  parser.add_argument("--lang_src", type=str, default="en", 
-                      help="Source language (default: en).")
-  parser.add_argument("--lang_tgt", type=str, default="fr", 
-                      help="Target language (default: fr).")
-  parser.add_argument("--dictionary", type=str, default="res/dicts/wikpan-en-fr.tsv",
-                      help="Use a dictionary with DBAlign. This argument should be a path, the string 'bn' if you are using babelnet, or can be none if you are using simalign.")
-  parser.add_argument("--aligner", type=str, default="dbalign",
-                      help="Aligner to use ('simalign' or 'dbalign').")
-  parser.add_argument("--output_file", type=str, default="expandnet_step2_align.out.tsv",
-                      help="Output file to save the file with alignments to.")
-  parser.add_argument("--num_workers", type=int, default=1,
-                      help="Number of workers to paralellize the alignment computation over. More than one is not recommended on Windows or less powerful machines. (Default: 1)")
-  parser.add_argument("--source_join_char", type=str, default='_')
-  parser.add_argument("--target_join_char", type=str, default='_')
-  
-  return parser.parse_args()
+    # Update in_df using the mapping
+    in_df = in_df.set_index('sentence_id')
+    in_df.update(mapping)
+    return in_df.reset_index()
 
+class AlignerFactory:
+    """Handles the setup and execution of different alignment backends."""
+    def __init__(self, args):
+        self.args = args
+        self.aligner_type = args.aligner
+        self.model = self._initialize_model()
 
-def safe_replace(s, old, new):
-    if old == "":
-        return s
-    return s.replace(old, new)
+    def _initialize_model(self):
+        if self.aligner_type == 'simalign':
+            from simalign import SentenceAligner
+            return SentenceAligner(model="xlmr", layer=8, token_type="bpe", matching_methods="i")
+        
+        elif self.aligner_type == 'dbalign':
+            from align_utils import DBAligner
+            if self.args.dictionary == 'bn':
+                return DBAligner(self.args.lang_src, self.args.lang_tgt)
+            return DBAligner(
+                self.args.lang_src, self.args.lang_tgt, 'custom', 
+                self.args.dictionary, self.args.source_join_char, self.args.target_join_char
+            )
 
-args = parse_args()
+    def align(self, row):
+        # Pre-processing
+        src_tokens = row['tokens'].split()
+        tgt_tokens = row['translation_token'].split()
+        src_lemmas = row['lemma'].split()
+        tgt_lemmas = row['translation_lemma'].split()
 
-SOURCE_JOIN_CHAR = args.source_join_char
-TARGET_JOIN_CHAR = args.target_join_char
+        if self.aligner_type == 'simalign':
+            return self.model.get_word_aligns(src_tokens, tgt_tokens)['itermax']
+        
+        # dbalign logic
+        tgt_tokens = [t.replace(self.args.target_join_char, " ") for t in tgt_tokens]
+        spans = self.model.new_align(src_tokens, tgt_tokens, src_lemmas, tgt_lemmas)
+        return self._spans_to_links(spans)
 
-print(f"Languages:   {args.lang_src} -> {args.lang_tgt}")
-print(f"Aligner:     {args.aligner}")
-print(f"Input file:  {args.translation_df_file}")
-print(f"Output file: {args.output_file}")
+    @staticmethod
+    def _spans_to_links(span_string):
+        links = []
+        for s in span_string.strip().split():
+            try:
+                x_start, x_end, y_start, y_end = map(int, s.split('-'))
+                for x in range(x_start, x_end + 1):
+                    for y in range(y_start, y_end + 1):
+                        links.append((x, y))
+            except (ValueError, IndexError):
+                continue
+        return sorted(list(set(links)))
 
-if args.aligner == 'simalign':
-  from simalign import SentenceAligner
-  ali = SentenceAligner(model="xlmr", layer=8, token_type="bpe", matching_methods="i")
-  def align(lang_src, lang_tgt, tokens_src, tokens_tgt, lemmas_src=None, lemmas_tgt=None):
-    alignment_links = ali.get_word_aligns(tokens_src, tokens_tgt)['itermax']
-    return(alignment_links)
+def main():
+    args = parse_args()
+    
+    print(f"Loading data from {args.translation_df_file}...")
+    df = pd.read_csv(args.translation_df_file, sep='\t')
+    df = replace_lemma_with_gold(df, args.src_data)
 
-elif args.aligner == 'dbalign':
-  from align_utils import DBAligner
-  if args.dictionary == 'bn':
-    print("Initializing DBAlign with BabelNet.")
-    ali = DBAligner(args.lang_src, args.lang_tgt)
-  else:
-    print("Initializing DBAlign with Provided Dictionary.")
-    ali = DBAligner(args.lang_src, args.lang_tgt, 'custom', args.dictionary, args.source_join_char, args.target_join_char)
+    # Initialize Parallelism
+    if args.num_workers > 1:
+        from pandarallel import pandarallel
+        pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
+        apply_method = df.parallel_apply
+    else:
+        tqdm.pandas()
+        apply_method = df.progress_apply
 
-  def spans_to_links(span_string):
-    span_string = span_string.strip()
-    span_list = span_string.split(' ')
-    links = set()
-    for s in span_list:
-      try:
-        (x_start, x_end, y_start, y_end) = s.split('-')
-        for x in range(int(x_start), int(x_end)+1):
-          for y in range(int(y_start), int(y_end)+1):
-            links.add((x,y))
-      except:
-        pass
-    return(sorted(links))
+    # Run Alignment
+    engine = AlignerFactory(args)
+    print(f"Aligning {len(df)} sentences using {args.aligner}...")
+    df['alignment'] = apply_method(engine.align, axis=1)
 
-  def align(lang_src, lang_tgt, tokens_src, tokens_tgt, lemmas_src, lemmas_tgt):
-    tokens_tgt = [safe_replace(a, TARGET_JOIN_CHAR, " ") for a in tokens_tgt]
-    alignment_spans = ali.new_align(tokens_src, tokens_tgt, lemmas_src, lemmas_tgt)
-   
-    return(spans_to_links(alignment_spans))
+    df.to_csv(args.output_file, sep='\t', index=False)
+    print(f"Complete! Saved to {args.output_file}")
 
-if args.num_workers > 1:
-    from pandarallel import pandarallel
-    pandarallel.initialize(
-        progress_bar=True,
-        nb_workers=args.num_workers
-    )
-    apply_fn = lambda df, fn: df.parallel_apply(fn, axis=1)
-else:
-    from tqdm import tqdm
-    tqdm.pandas()
-    apply_fn = lambda df, fn: df.progress_apply(fn, axis=1)
-
-print(f"Loading data from {args.translation_df_file}...")
-df_sent = pd.read_csv(args.translation_df_file, sep='\t')
-
-replace_lemma_with_gold(df_sent, args.src_data)
-
-print(f"Loaded {len(df_sent)} sentences\n")
-
-print("Aligning sentences...")
-df_sent['alignment'] = apply_fn(
-    df_sent,
-    lambda row: align(
-        args.lang_src,
-        args.lang_tgt,
-        row['tokens'].split(),
-        row['translation_token'].split(),
-        row['lemma'].split(' '),
-        row['translation_lemma'].split(' ')
-    )
-)
-
-print(f"\nSaving results to {args.output_file}...")
-df_sent.to_csv(args.output_file, sep='\t', index=False)
-print("Complete!")
+if __name__ == "__main__":
+    main()
