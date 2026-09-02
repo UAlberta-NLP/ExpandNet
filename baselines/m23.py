@@ -62,7 +62,7 @@ def parse_args():
                       help="Path to the XLWSD XML corpus file.")
   parser.add_argument("--src_gold", type=str, default="semcor_en.gold.key.dev.txt",
                       help="Path to the gold sense tagging file.")
-  parser.add_argument("--translation_df_file", type=str, default="exnet_step1_out.tsv",
+  parser.add_argument("--input_file", type=str, default="exnet_step1_out.tsv",
                       help="File to load sentences and translations from.")
   parser.add_argument("--beta", type=float, default=0.7,
                       help="Beta (strongly recommend using default 0.7)")
@@ -77,7 +77,7 @@ src_data = args.src_data
 src_gold = args.src_gold
 output_file = args.output_file
 
-translation_df_file = args.translation_df_file
+translation_df_file = args.input_file
 
 
 # Print argument details.
