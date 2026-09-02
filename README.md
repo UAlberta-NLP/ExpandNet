@@ -37,6 +37,7 @@ Each step runs independently and can be customized with your own dictionaries. I
 ├── gpt_translate.py               # OpenAI translation backend
 ├── xml_utils.py                   # Corpus XML parsing utilities
 ├── pos_mapping_u.tsv              # Universal POS → simplified tagset mapping
+├── baselines/                     # Reimplementations of systems from prior work
 ├── inputs/                        # Source corpus (SemCor) and gold key
 ├── res/dicts/                     # Bilingual dictionaries (en–es, en–fr, en–zh, en–ur)
 ├── res/                           # Gold sense inventories and word lists
