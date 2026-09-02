@@ -1,61 +1,85 @@
+# ExpandNet Baselines
+
+This subfolder contains scripts to run various baselines for comparison against ExpandNet.
+
 ## UWN Baseline
 
-The script `uwn-to-bn.py` can be used to extract senses from Universal WordNet.
+The script `uwn-to-bn.py` extracts senses from Universal WordNet (UWN) and converts their synset IDs from the WordNet format to BabelNet format. 
 
-The UWN resource can be found in the `res` subfolder, though compressed. 
-You will need to unzip it.
+*Note: This script requires the [BabelNet package](https://babelnet.org/guide).*
 
-You will also need to identify the three letter 639-3 language code of the language you want to extract sense for.
-See https://iso639-3.sil.org/code_tables/639/data or https://en.wikipedia.org/wiki/List_of_ISO_639-3_codes for information.
+**Prerequisites:**
+1. Unzip the UWN resource located in the local `res/` subfolder (inside this `baselines` directory).
+2. Identify the 3-letter ISO 639-3 code for your target language (see [SIL data](https://iso639-3.sil.org/code_tables/639/data) or [Wikipedia](https://en.wikipedia.org/wiki/List_of_ISO_639-3_codes)).
 
-The script takes three arguments:
-1. input_file: The .tsv file containing the contents of UWN. 
-2. language: The 639-3 language code of the language to extract.
-3. output_file: The file to save these output senses to.
-4. data_file: The file that contains the IDs of those synsets we care about.
+**Arguments:**
+* `--input_file`: The `.tsv` file containing the contents of UWN.
+* `--language`: The 639-3 language code to extract.
+* `--output_file`: Where to save the output senses.
+* `--data_file`: The file containing the IDs of the synsets to process.
 
-Altogether, it can be run as such:
-
+**Example:**
 ```bash 
 python3 uwn-to-bn.py \
 --input_file res/uwn.tsv \
 --language spa \
 --output_file uwn-bn-out.tsv \
 --data_file res/scdev_gold_senses.txt
+
 ```
 
-## OC14 Baseline 
+## OC14 Baseline
 
-The script `oc14.py` can be used to obtain senses using the Oliver and Climent reimplementation.
+The script `oc14.py` obtains senses using the Oliver and Climent reimplementation.
 
-It takes the input source data, a sheet containing a translation (as would be used as input to ExpandNet step 2, for example) and a file containing the source-side sense annotations.
+**Arguments:**
 
-For example:
+* `--src_data`: The input source data XML.
+* `--input_file`: A sheet containing a translation (e.g., output from ExpandNet Step 1).
+* `--input_gold`: The file containing the source-side sense annotations.
 
-```bash 
-python oc14.py --src_data semcor_en.data.dev.xml --input_file exnet_step1_out_es.tsv --input_gold semcor_en.gold.key.dev.txt
+**Example:**
+
+```bash
+python oc14.py --src_data ../inputs/semcor_en.data.dev.xml --input_file exnet_step1_out_es.tsv --input_gold ../inputs/semcor_en.gold.key.dev.txt
+
 ```
 
-## M23 Baseline 
+## M23 Baseline
 
-The script `m23.py` can be used to obtain senses using the Martelli reimplementation.
+The script `m23.py` obtains senses using the Martelli reimplementation.
 
-It takes the input source data (and gold), the language, a sheet containing a translation (as would be used as input to ExpandNet step 2, for example) and a beta parameter (though please stick to the default value of 0.7)
+**Arguments:**
 
-For example:
+* `--src_data`: The input source data XML.
+* `--src_gold`: The source gold key annotations.
+* `--input_file`: A sheet containing a translation (e.g., output from ExpandNet Step 1).
+* `--output_file`: Where to save the output.
+* `--language`: The 639-3 language code.
+* `--beta`: Beta parameter (default is `0.7`; it is recommended to leave this unchanged).
 
-```bash 
-python m23.py --translation_df_file exnet_gpt_es.tsv --src_data semcor_en.data.dev.xml --src_gold semcor_en.gold.key.dev.txt --output_file m23_out.tsv
+**Example:**
+
+```bash
+python3 m23.py --input_file exnet_step1_out_es.tsv --src_data ../inputs/semcor_en.data.dev.xml --src_gold ../inputs/semcor_en.gold.key.dev.txt --output_file m23_out.tsv
+
 ```
 
-## Dictionary Baseline 
+## Dictionary Baseline
 
-The script `dictbaseline.py` can be used to obtain senses using a dictionary baseline
+The script `dictbaseline.py` obtains senses using a simple dictionary baseline.
 
-It takes the input source data, the source gold, a dictionary, a join character, and the output file.
+**Arguments:**
 
-For example:
+* `--src_data`: The input source data XML.
+* `--src_gold`: The source gold key annotations.
+* `--dictionary`: The bilingual dictionary file to use.
+* `--join_char`: The character used to connect multi-word expressions.
+* `--output_file`: Where to save the output.
 
-```bash 
-python dictbaseline.py --src_data semcor_en.data.dev.xml --dictionary /home/dbasil1/cmput650/ExpandNet/res/dicts/wikpan-en-es.tsv --src_gold semcor_en.gold.key.dev.txt --join_char _ --output_file dictionary_baseline_spanish.out.tsv
+**Example:**
+
+```bash
+python3 dictbaseline.py --src_data ../inputs/semcor_en.data.dev.xml --dictionary ../res/dicts/wikpan-en-es.tsv --src_gold ../inputs/semcor_en.gold.key.dev.txt --join_char _ --output_file dictionary_baseline_spanish.out.tsv
+
 ```
