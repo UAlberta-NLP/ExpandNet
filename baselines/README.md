@@ -41,7 +41,7 @@ The script `oc14.py` obtains senses using the Oliver and Climent reimplementatio
 **Example:**
 
 ```bash
-python oc14.py --src_data ../inputs/semcor_en.data.dev.xml --input_file exnet_step1_out_es.tsv --input_gold ../inputs/semcor_en.gold.key.dev.txt
+python3 oc14.py --src_data ../inputs/semcor_en.data.dev.xml --input_file exnet_step1_out_es.tsv --input_gold ../inputs/semcor_en.gold.key.dev.txt
 
 ```
 
