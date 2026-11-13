@@ -6,7 +6,7 @@
 [![Slides](https://img.shields.io/badge/Slides-PDF-green?style=flat-square)](assets/slides.pdf)
 [![Venue](https://img.shields.io/badge/Canadian%20AI-2026-orange?style=flat-square)](https://proceedings.mlr.press/v318/basil26a.html)
 
-This repository is for the paper Generating Concept Lexicalizations via Dictionary-Based Cross-Lingual Sense Projection. David Basil, Chirooth Girigowda, Bradley Hauer, Grzegorz Kondrak, Sahir Momin, Ning Shi. Proceedings of the The 39th Canadian Conference on Artificial Intelligence, PMLR 318:1036-1043, 2026.
+This repository is for the paper Generating Concept Lexicalizations via Dictionary-Based Cross-Lingual Sense Projection. David Basil, Chirooth Girigowda, Bradley Hauer, Grzegorz Kondrak, Sahir Momin, Ning Shi. Proceedings of the 39th Canadian Conference on Artificial Intelligence, PMLR 318:1036-1043, 2026.
 
 We study the task of automatically expanding WordNet-style lexical resources to new languages through **sense generation**: given a sense-tagged English corpus and its translation, we associate target-language lemmas with existing lexical concepts via **semantic projection**, projecting annotated synsets onto aligned target-language tokens. To generate alignments and ensure their quality, we augment a pretrained base aligner with a **bilingual dictionary**, which is also used to filter incorrect sense projections. The resulting project-and-filter strategy improves precision while remaining interpretable and resource-efficient.
 
