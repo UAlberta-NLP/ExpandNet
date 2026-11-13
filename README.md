@@ -4,7 +4,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2604.14397-b31b1b?style=flat-square)](https://arxiv.org/abs/2604.14397)
 [![Poster](https://img.shields.io/badge/Poster-PDF-blue?style=flat-square)](assets/poster.pdf)
 [![Slides](https://img.shields.io/badge/Slides-PDF-green?style=flat-square)](assets/slides.pdf)
-[![Venue](https://img.shields.io/badge/Canadian%20AI-2026-orange?style=flat-square)](https://proceedings.mlr.press/v318/)
+[![Venue](https://img.shields.io/badge/Canadian%20AI-2026-orange?style=flat-square)](https://proceedings.mlr.press/v318/basil26a.html)
 
 This repository is for the paper Generating Concept Lexicalizations via Dictionary-Based Cross-Lingual Sense Projection. David Basil, Chirooth Girigowda, Bradley Hauer, Grzegorz Kondrak, Sahir Momin, Ning Shi. Proceedings of the The 39th Canadian Conference on Artificial Intelligence, PMLR 318:1036-1043, 2026.
 
